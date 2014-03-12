@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<head>
+	<script>
+		window.addEventListener('load',carga);
+		
+		var elementPlay;
+		
+		var elementPause;
+		
+		var elementStop;
+		
+		var elementSongList;
+		
+		var elementStateSong; 
+		
+		var elementTime;
+		
+		var files;
+		
+		var reader;
+		
+		var readerUrl = new FileReader();
+		
+		
+		var audio = new Audio();
+		audio.controls= false;
+		audio.autoplay = false;
+		
+		var fileToRead;
+		
+		
+		
+		
+		function handleFileSelect(evt) {
+		
+			reader = new FileReader();
+			
+			reader.addEventListener('load',readMp3tag);
+			
+			var first = false;
+			readerUrl.addEventListener('load',function(e){
+				
+				
+				
+				if (!first){
+					first = true;
+					source = audioContext.createMediaElementSource(audio);
+					source.connect(audioContext.destination);
+				}
+				audio.src = e.target.result;
+				audio.load();
+				
+				elementStateSong.innerHTML = "Song loaded";
+				
+			
+			});
+			
+			files = evt.target.files; // FileList object
+
+			var fileLength = files.length;
+				elementSongList.innerHTML = "";
+			for (var i=0;i<fileLength;i++){
+				var element = document.createElement("li");
+				var text = document.createTextNode(files[i].name);
+				element.addEventListener('click',loadSong);
+				element.appendChild(text);
+				elementSongList.appendChild(element);
+				
+			}
+			fileToRead = files[0];
+			reader.readAsArrayBuffer(fileToRead);
+			
+			
+			
+			
+			
+			
+		}	
+
+		function loadSong(){
+			
+			var fileLength = files.length;
+			var texto = this.innerText || this.textContent;
+			
+			stop();
+			
+			for	(var i=0; i<fileLength;i++)
+			{
+				if (files[i].name == texto){
+					fileToRead = files[i];
+					reader.readAsArrayBuffer(fileToRead);		
+					break;
+				}
+			}
+		
+		}
+
+			
+
+		function readMp3tag(e){
+		
+			elementStateSong.innerHTML = "Loading Sound";
+			/*audioContext.decodeAudioData(this.result,function(buffer)
+			{
+				songBuffer = buffer;
+				elementStateSong.innerHTML = "Canción Cargada";
+			});*/
+			var dv = new jDataView(this.result);
+			
+			if (dv.getString(3, dv.byteLength - 128) == 'TAG') {
+				var element = document.getElementById('mp3Tag');
+				
+			  var title = dv.getString(30, dv.tell());
+			  var artist = dv.getString(30, dv.tell());
+			  var album = dv.getString(30, dv.tell());
+			  var year = dv.getString(4, dv.tell());
+			  
+			  element.children[0].innerHTML = "Title : " + title;
+			  element.children[1].innerHTML = "Artist : " + artist;
+			  element.children[2].innerHTML = "Album : " + album;
+			  element.children[3].innerHTML = "Year: " + year;
+			} else {
+			  // no ID3v1 data found.
+			}
+			
+			readerUrl.readAsDataURL(fileToRead);
+		}
+		
+	
+	
+		function carga()
+		{
+			document.getElementById('files').addEventListener('change', handleFileSelect, false);
+			
+			elementPlay = document.getElementById('play');
+			elementPause = document.getElementById('pause');
+			elementStop = document.getElementById('stop');
+			elementSongList = document.getElementById('songList');
+			elementStateSong = document.getElementById('stateSong');
+			elementTime = document.getElementById('time');
+			
+			
+			elementPlay.addEventListener('click',play);
+			elementPause.addEventListener('click',pause);
+			elementStop.addEventListener('click',stop);
+			
+			document.body.appendChild(audio);
+			
+			audio.addEventListener('timeupdate',durationEvent);
+			
+			
+		
+		}
+		
+		function play()
+		{
+
+			audio.play();
+			
+				
+			
+			
+			
+			 
+		
+		}
+		
+		function pause(){
+			
+			audio.pause();
+		
+		}
+		
+		function stop(){
+		
+			pause();
+			audio.currentTime = 0;
+		
+		}
+		
+		function durationEvent(e){
+			elementTime.innerHTML = this.currentTime.toFixed(2)  + " / " + this.duration.toFixed(2);
+		
+		}
+		
+		
+		
+		/*Web audio API*/
+		
+		window.AudioContext = window.AudioContext || window.webkitAudioContext;
+		
+		var audioContext = new AudioContext();
+		
+		var songBuffer;
+		
+		var timeSong = 0; //Current time of the song
+		
+		var source;
+		
+		var playend= true;
+		
+	</script>
+	<script src="jdataview.js"></script>
+
+</head>
+
+
+<body>
+
+	<div>
+		<input type="file" id="files" name="files[]" multiple />
+		<ul id="mp3Tag">
+			<li>No data</li>
+			<li>No data</li>
+			<li>No data</li>
+			<li>No data</li>
+		</ul>
+		<div id="play">Play</div>
+		<div id="pause">Pause</div>
+		<div id="stop">Stop</div>
+	</div>
+	<div id="stateSong"></div>
+	<ul id="songList">
+	
+	
+	</ul>
+	
+	<div id="time"></div>
+
+
+</body>
+</html>
