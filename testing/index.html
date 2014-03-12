@@ -22,11 +22,7 @@
 		var readerUrl = new FileReader();
 		
 		
-		var audio = new Audio();
-		audio.controls= false;
-		audio.autoplay = false;
-		
-		var fileToRead;
+		var fileToRead; //The song is currently loaded
 		
 		
 		
@@ -37,13 +33,11 @@
 			
 			reader.addEventListener('load',readMp3tag);
 			
-			var first = false;
 			readerUrl.addEventListener('load',function(e){
 				
 				
 				
-				if (!first){
-					first = true;
+				if (!source){
 					source = audioContext.createMediaElementSource(audio);
 					source.connect(audioContext.destination);
 				}
@@ -100,11 +94,7 @@
 		function readMp3tag(e){
 		
 			elementStateSong.innerHTML = "Loading Sound";
-			/*audioContext.decodeAudioData(this.result,function(buffer)
-			{
-				songBuffer = buffer;
-				elementStateSong.innerHTML = "Canción Cargada";
-			});*/
+
 			var dv = new jDataView(this.result);
 			
 			if (dv.getString(3, dv.byteLength - 128) == 'TAG') {
@@ -156,13 +146,7 @@
 		{
 
 			audio.play();
-			
-				
-			
-			
-			
-			 
-		
+
 		}
 		
 		function pause(){
@@ -191,13 +175,15 @@
 		
 		var audioContext = new AudioContext();
 		
-		var songBuffer;
-		
-		var timeSong = 0; //Current time of the song
-		
 		var source;
 		
 		var playend= true;
+		
+		var audio = new Audio();
+		
+		audio.controls= false;
+		
+		audio.autoplay = false;
 		
 	</script>
 	<script src="jdataview.js"></script>
