@@ -24,11 +24,23 @@
 		
 		var fileToRead; //The song is currently loaded
 		
+		var musicFilesDict = {};
 		
+		var musicFilesArray = new Array();
+		
+		var songFiles = 0;
+		
+		var currentSongFile = 0;
+		
+		var idSong;
 		
 		
 		function handleFileSelect(evt) {
 		
+			musicFilesDict = new buckets.Dictionary(); //Init the Dictionary 
+			
+			elementSongList.innerHTML = ""; //Reset the soung list
+			
 			reader = new FileReader();
 			
 			reader.addEventListener('load',readMp3tag);
@@ -37,73 +49,96 @@
 				
 				
 				
-				if (!source){
-					source = audioContext.createMediaElementSource(audio);
-					source.connect(audioContext.destination);
-				}
-				audio.src = e.target.result;
-				audio.load();
+				var song = musicFilesDict.get(e.loaded)
 				
-				elementStateSong.innerHTML = "Song loaded";
+				song.push(e.target.result);
+				
+				
+				
+				var element = document.createElement("li");
+				element.setAttribute("data-idSong",e.loaded);
+				var text = document.createTextNode(song[0]);
+				element.addEventListener('click',loadSongEvent);
+				element.appendChild(text);
+				elementSongList.appendChild(element);
 				
 			
 			});
 			
-			files = evt.target.files; // FileList object
+			var files = evt.target.files; // FileList object
 
-			var fileLength = files.length;
-				elementSongList.innerHTML = "";
-			for (var i=0;i<fileLength;i++){
-				var element = document.createElement("li");
-				var text = document.createTextNode(files[i].name);
-				element.addEventListener('click',loadSong);
-				element.appendChild(text);
-				elementSongList.appendChild(element);
-				
-			}
-			fileToRead = files[0];
-			reader.readAsArrayBuffer(fileToRead);
+			songFiles = files.length;
+			var i = 0;
+			var interval = window.setInterval(function(){
+				if (i>=songFiles){
+					clearInterval(interval);
+					return;
+				}
+				if (reader.readyState != reader.LOADING){
+					fileToRead = files[i];
+					reader.readAsArrayBuffer(files[i]);
+					i++;
+				}
+			},1000);
+			
+			
+			
+			
+			
+			
 			
 		}	
 
-		function loadSong(){
-			
-			var fileLength = files.length;
-			var texto = this.innerText || this.textContent;
-			
+		function loadSong(idSong){
+			this.idSong = idSong;
 			stop();
 			
-			for	(var i=0; i<fileLength;i++)
-			{
-				if (files[i].name == texto){
-					fileToRead = files[i];
-					reader.readAsArrayBuffer(fileToRead);		
-					break;
+			var musicSong = musicFilesDict.get(idSong);
+			var element = document.getElementById('mp3Tag');
+			element.children[0].innerHTML = "Title : " + musicSong[0];
+			element.children[1].innerHTML = "Artist : " + musicSong[1];
+			element.children[2].innerHTML = "Album : " + musicSong[2];
+			element.children[3].innerHTML = "Year: " + musicSong[3];
+			
+			if (!source){
+					source = audioContext.createMediaElementSource(audio);
+					source.connect(audioContext.destination);
 				}
-			}
+			audio.src = musicSong[4];
+			audio.load();
+			
+			audio.play();
 		
+			
 		}
 
 			
 
 		function readMp3tag(e){
 		
-			elementStateSong.innerHTML = "Loading Sound";
+
 
 			var dv = new jDataView(this.result);
 			
 			if (dv.getString(3, dv.byteLength - 128) == 'TAG') {
-				var element = document.getElementById('mp3Tag');
+				
 				
 			  var title = dv.getString(30, dv.tell());
 			  var artist = dv.getString(30, dv.tell());
 			  var album = dv.getString(30, dv.tell());
 			  var year = dv.getString(4, dv.tell());
 			  
-			  element.children[0].innerHTML = "Title : " + title;
-			  element.children[1].innerHTML = "Artist : " + artist;
-			  element.children[2].innerHTML = "Album : " + album;
-			  element.children[3].innerHTML = "Year: " + year;
+			 // element.children[0].innerHTML = "Title : " + title;
+			 // element.children[1].innerHTML = "Artist : " + artist;
+			 // element.children[2].innerHTML = "Album : " + album;
+			 // element.children[3].innerHTML = "Year: " + year;
+			  
+			  musicFilesDict.set(e.loaded,[title,artist,album,year]);
+			  
+			  musicFilesArray.push(e.loaded);
+			  
+			  elementStateSong.innerHTML = "Loading Song: " + ++currentSongFile + " of " + songFiles;
+			  
 			} else {
 			  // no ID3v1 data found.
 			}
@@ -132,6 +167,7 @@
 			document.body.appendChild(audio);
 			
 			audio.addEventListener('timeupdate',durationEvent);
+			audio.addEventListener('ended',songEndEvent);
 			
 			
 		
@@ -153,13 +189,27 @@
 		function stop(){
 		
 			pause();
-			audio.currentTime = 0;
+			if (audio.currentTime != 0){
+				audio.currentTime = 0;
+			}
+			
 		
+		}
+		
+		function loadSongEvent(e){
+			loadSong(this.getAttribute("data-idSong"));
 		}
 		
 		function durationEvent(e){
 			elementTime.innerHTML = this.currentTime.toFixed(2)  + " / " + this.duration.toFixed(2);
-		
+		}
+		function songEndEvent(e){
+			for (var i=0; musicFilesArray.length > i;i++){
+				if(musicFilesArray[i] == idSong && i+1 < musicFilesArray.length){
+					loadSong(musicFilesArray[++i]);
+					return;
+				}
+			}
 		}
 		
 		
@@ -182,6 +232,7 @@
 		
 	</script>
 	<script src="jdataview.js"></script>
+	<script src="buckets-minified.js"></script>
 
 </head>
 
